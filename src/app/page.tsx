@@ -177,53 +177,7 @@ function getWorkoutForDay(day: string) {
 
 // Music playlist
 const musicPlaylist = [
-  "Beautiful Monster.mp3",
-  "Belly Dancer.mp3",
-  "Boyz In Paris (with VINAI).mp3",
-  "Candy Shop (feat. EEVA).mp3",
-  "Danza Kuduro - Tiësto Remix.mp3",
-  "Day 'N' Nite.mp3",
-  "Do It Like Me - Acid Boyz Remix.mp3",
-  "Dreamin (feat. Daya).mp3",
-  "Faded.mp3",
-  "Family Affair.mp3",
-  "Fashion From France.mp3",
-  "Feel My Love.mp3",
-  "Freaks - Radio Edit.mp3",
-  "Freestyler (Rock The Microphone).mp3",
-  "Give Me That (feat. Emily J).mp3",
-  "Guess.mp3",
-  "I Follow Rivers.mp3",
-  "I like the way you kiss me.mp3",
-  "King Of My Castle.mp3",
-  "Kisses (feat. bbyclose).mp3",
-  "Lay All Your Love On Me.mp3",
-  "LET'S GET FKD UP.mp3",
-  "Let's Go.mp3",
-  "Lioness - Argy Remix.mp3",
-  "Love For The Weekend.mp3",
-  "Love The Way You Lie (feat. Norma Jean Martine).mp3",
-  "Mask Off.mp3",
-  "Memories (feat. Nito-Onna).mp3",
-  "Monster Paradise.mp3",
-  "Paradise.mp3",
-  "Perfect (Exceeder).mp3",
-  "Prada.mp3",
-  "Praise The Lord (Da Shine) (feat. Skepta) - Durdenhauer Edit.mp3",
-  "Promises.mp3",
-  "Pump It Louder.mp3",
-  "Say My Name - Remix.mp3",
-  "Seven Nation Army.mp3",
-  "Sexy And I Know It.mp3",
-  "Sexy Chick.mp3",
-  "Smells Like Teen Spirit.mp3",
-  "SPEND IT.mp3",
-  "Sweat.mp3",
-  "Temperature.mp3",
-  "Thank You (Not So Bad).mp3",
-  "The Days - NOTION Remix.mp3",
-  "Vois sur ton chemin - Techno Mix.mp3",
-  "YEAH.mp3",
+  "workouts.mp3",
 ];
 
 export default function WorkoutApp() {
@@ -490,7 +444,7 @@ export default function WorkoutApp() {
                   key={dayNum}
                   className={`relative group cursor-pointer transition-all duration-300 transform hover:scale-105 ${
                     selectedDay === dayNum
-                      ? "ring-2 ring-orange-500 rounded-2xl"
+                      ? "rounded-2xl"
                       : ""
                   }`}
                   onClick={() => setSelectedDay(dayNum)}
