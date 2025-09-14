@@ -14,6 +14,11 @@ import {
   Calendar,
   Target,
   Zap,
+  Volume2,
+  VolumeX,
+  Shuffle,
+  SkipForward,
+  Pause,
 } from "lucide-react";
 
 // Workout Plan Data
@@ -170,6 +175,57 @@ function getWorkoutForDay(day: string) {
   return null;
 }
 
+// Music playlist
+const musicPlaylist = [
+  "Beautiful Monster.mp3",
+  "Belly Dancer.mp3",
+  "Boyz In Paris (with VINAI).mp3",
+  "Candy Shop (feat. EEVA).mp3",
+  "Danza Kuduro - Tiësto Remix.mp3",
+  "Day 'N' Nite.mp3",
+  "Do It Like Me - Acid Boyz Remix.mp3",
+  "Dreamin (feat. Daya).mp3",
+  "Faded.mp3",
+  "Family Affair.mp3",
+  "Fashion From France.mp3",
+  "Feel My Love.mp3",
+  "Freaks - Radio Edit.mp3",
+  "Freestyler (Rock The Microphone).mp3",
+  "Give Me That (feat. Emily J).mp3",
+  "Guess.mp3",
+  "I Follow Rivers.mp3",
+  "I like the way you kiss me.mp3",
+  "King Of My Castle.mp3",
+  "Kisses (feat. bbyclose).mp3",
+  "Lay All Your Love On Me.mp3",
+  "LET'S GET FKD UP.mp3",
+  "Let's Go.mp3",
+  "Lioness - Argy Remix.mp3",
+  "Love For The Weekend.mp3",
+  "Love The Way You Lie (feat. Norma Jean Martine).mp3",
+  "Mask Off.mp3",
+  "Memories (feat. Nito-Onna).mp3",
+  "Monster Paradise.mp3",
+  "Paradise.mp3",
+  "Perfect (Exceeder).mp3",
+  "Prada.mp3",
+  "Praise The Lord (Da Shine) (feat. Skepta) - Durdenhauer Edit.mp3",
+  "Promises.mp3",
+  "Pump It Louder.mp3",
+  "Say My Name - Remix.mp3",
+  "Seven Nation Army.mp3",
+  "Sexy And I Know It.mp3",
+  "Sexy Chick.mp3",
+  "Smells Like Teen Spirit.mp3",
+  "SPEND IT.mp3",
+  "Sweat.mp3",
+  "Temperature.mp3",
+  "Thank You (Not So Bad).mp3",
+  "The Days - NOTION Remix.mp3",
+  "Vois sur ton chemin - Techno Mix.mp3",
+  "YEAH.mp3",
+];
+
 export default function WorkoutApp() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [currentExercise, setCurrentExercise] = useState(0);
@@ -182,6 +238,60 @@ export default function WorkoutApp() {
     new Set()
   );
   const [showWorkout, setShowWorkout] = useState(false);
+
+  // Music state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrack, setCurrentTrack] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [isLowVolume, setIsLowVolume] = useState(false);
+  const [showBeepIndicator, setShowBeepIndicator] = useState(false);
+
+  // Music functions
+  const shufflePlaylist = () => {
+    const shuffled = [...musicPlaylist].sort(() => Math.random() - 0.5);
+    return shuffled;
+  };
+
+  const playNextTrack = () => {
+    if (audio) {
+      audio.pause();
+    }
+    const nextTrack = (currentTrack + 1) % musicPlaylist.length;
+    setCurrentTrack(nextTrack);
+    const newAudio = new Audio(`/music/${musicPlaylist[nextTrack]}`);
+    newAudio.loop = true;
+    newAudio.volume = isMuted ? 0 : isLowVolume ? 0.2 : 0.7;
+    setAudio(newAudio);
+    if (isPlaying) {
+      newAudio.play();
+    }
+  };
+
+  const togglePlayPause = () => {
+    if (audio) {
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        audio.play();
+      }
+      setIsPlaying(!isPlaying);
+    } else {
+      const newAudio = new Audio(`/music/${musicPlaylist[currentTrack]}`);
+      newAudio.loop = true;
+      newAudio.volume = isMuted ? 0 : 0.7;
+      setAudio(newAudio);
+      newAudio.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const toggleMute = () => {
+    if (audio) {
+      audio.volume = isMuted ? (isLowVolume ? 0.2 : 0.7) : 0;
+      setIsMuted(!isMuted);
+    }
+  };
 
   // Update workout when day changes
   useEffect(() => {
@@ -197,9 +307,68 @@ export default function WorkoutApp() {
   // Countdown timer effect
   useEffect(() => {
     if (timeLeft <= 0 || status === "idle" || status === "done") return;
-    const timer = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        const newTime = t - 1;
+
+        // Volume control for last 5 seconds
+        if (audio && !isMuted) {
+          if (newTime <= 5 && newTime > 0) {
+            // Lower volume and play beep
+            audio.volume = 0.2;
+            setIsLowVolume(true);
+            setShowBeepIndicator(true);
+
+            // Play beep sound using Web Audio API
+            try {
+              const audioContext = new (window.AudioContext ||
+                (window as any).webkitAudioContext)();
+              const oscillator = audioContext.createOscillator();
+              const gainNode = audioContext.createGain();
+
+              oscillator.connect(gainNode);
+              gainNode.connect(audioContext.destination);
+
+              oscillator.frequency.setValueAtTime(
+                800,
+                audioContext.currentTime
+              );
+              oscillator.type = "sine";
+
+              gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+              gainNode.gain.exponentialRampToValueAtTime(
+                0.01,
+                audioContext.currentTime + 0.1
+              );
+
+              oscillator.start(audioContext.currentTime);
+              oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (error) {
+              // Fallback: try to play a simple beep using Audio
+              const beep = new Audio();
+              beep.src =
+                "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBz2BzvLZiTYIG2m98OScTgwOUarm7blmGgU5k9n1unEiBS13yO/eizEIHWq+8+OWT";
+              beep.volume = 0.5;
+              beep.play().catch(() => {});
+            }
+
+            // Hide beep indicator after a short delay
+            setTimeout(() => setShowBeepIndicator(false), 200);
+          } else if (newTime === 0) {
+            // Restore normal volume
+            audio.volume = 0.7;
+            setIsLowVolume(false);
+            setShowBeepIndicator(false);
+          }
+        }
+
+        return newTime;
+      });
+    }, 1000);
+
     return () => clearInterval(timer);
-  }, [timeLeft, status]);
+  }, [timeLeft, status, audio, isMuted]);
 
   // Handle phase transitions
   useEffect(() => {
@@ -264,6 +433,19 @@ export default function WorkoutApp() {
     setTimeLeft(30);
     setShowWorkout(true);
     setCompletedExercises(new Set());
+
+    // Auto-play music when workout starts
+    if (!audio) {
+      const newAudio = new Audio(`/music/${musicPlaylist[currentTrack]}`);
+      newAudio.loop = true;
+      newAudio.volume = 0.7;
+      setAudio(newAudio);
+      newAudio.play().catch(() => {});
+      setIsPlaying(true);
+    } else if (!isPlaying) {
+      audio.play().catch(() => {});
+      setIsPlaying(true);
+    }
   };
 
   const resetWorkout = () => {
@@ -273,6 +455,16 @@ export default function WorkoutApp() {
     setCurrentSet(0);
     setCompletedExercises(new Set());
   };
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.src = "";
+      }
+    };
+  }, [audio]);
 
   // Show workout list selection
   if (!showWorkout) {
@@ -297,7 +489,9 @@ export default function WorkoutApp() {
                 <div
                   key={dayNum}
                   className={`relative group cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                    selectedDay === dayNum ? "ring-2 ring-orange-500 rounded-2xl" : ""
+                    selectedDay === dayNum
+                      ? "ring-2 ring-orange-500 rounded-2xl"
+                      : ""
                   }`}
                   onClick={() => setSelectedDay(dayNum)}
                 >
@@ -479,7 +673,7 @@ export default function WorkoutApp() {
                       : status === "rest"
                       ? "text-blue-400"
                       : "text-orange-400"
-                  }`}
+                  } ${showBeepIndicator ? "animate-pulse" : ""}`}
                 >
                   {timeLeft}
                 </div>
@@ -529,6 +723,69 @@ export default function WorkoutApp() {
           <h3 className="text-lg font-bold mb-4 flex items-center">
             Workout List
           </h3>
+
+          {/* Music Player */}
+          <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-600">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-300">
+                Music Player
+              </h4>
+              <button
+                onClick={() => {
+                  const shuffled = shufflePlaylist();
+                  setCurrentTrack(0);
+                  if (audio) {
+                    audio.pause();
+                    const newAudio = new Audio(`/music/${shuffled[0]}`);
+                    newAudio.loop = true;
+                    newAudio.volume = isMuted ? 0 : 0.7;
+                    setAudio(newAudio);
+                    if (isPlaying) {
+                      newAudio.play();
+                    }
+                  }
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <Shuffle className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-gray-400 mb-3 truncate">
+              {musicPlaylist[currentTrack]?.replace(".mp3", "")}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={togglePlayPause}
+                className="p-2 bg-orange-500 hover:bg-orange-600 rounded-full transition-colors"
+              >
+                {isPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+              </button>
+
+              <button
+                onClick={playNextTrack}
+                className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
+              >
+                <SkipForward className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={toggleMute}
+                className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
           <div className="space-y-3">
             {workout.exercises.map((exercise, index) => {
               const isCompleted = completedExercises.has(index);
